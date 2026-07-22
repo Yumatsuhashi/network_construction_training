@@ -1,0 +1,60 @@
+! ============================================================
+! ④ IGPルーティング : CSW1 （コアL3SW）
+! 出典: 設計書_md/03_論理設計.md（論理設計⑧⑨）
+!       設問 02_パッシブインターフェース / 03_OSPFネットワークタイプ最適化
+! 内容: OSPF（全エリア0, MD5認証, router-id 3.3.3.3, P2P）
+! 前提: L3 IP/Po/Vlan100 は ③ で設定済み
+! ============================================================
+!
+! ------------------------------------------------------------
+! ■ 不明点・確認事項（実機設定時に確認）
+!  - CSWは全インターフェースがエリア0（コア）。Lo0/サーバVLAN100もエリア0。
+!  - サーバセグメント Vlan100 は passive のまま（OSPF機器が居ないため隣接不要）。
+!    passive-interface default で自動的にpassive、明示解除しない。
+!  - MD5認証: area 0 authentication message-digest + 各/30リンクにkey cisco123。
+!  - 隣接を張るのは Po1(DSW1),Po2(DSW2),Po3(CSW2),Fa0/6(R1)。すべてP2P。
+!  - CSW1-CSW2はPo3(/30)で直接隣接。VLAN100経由(L2)の冗長経路はpassiveで隣接なし。
+! ------------------------------------------------------------
+
+hostname CSW1
+!
+! ============================================================
+! エリア0リンクのOSPF設定（P2P + MD5）
+!   Po1:DSW1(10.1.255.0/30) Po2:DSW2(10.1.255.12/30)
+!   Po3:CSW2(10.1.255.8/30) Fa0/6:R1(10.1.255.20/30)
+! ============================================================
+interface Port-channel1
+ ip ospf network point-to-point
+ ip ospf message-digest-key 1 md5 cisco123
+!
+interface Port-channel2
+ ip ospf network point-to-point
+ ip ospf message-digest-key 1 md5 cisco123
+!
+interface Port-channel3
+ ip ospf network point-to-point
+ ip ospf message-digest-key 1 md5 cisco123
+!
+interface FastEthernet0/6
+ ip ospf network point-to-point
+ ip ospf message-digest-key 1 md5 cisco123
+!
+! ============================================================
+! OSPFプロセス（router-id 3.3.3.3 / 論理設計⑧）
+! ============================================================
+router ospf 1
+ router-id 3.3.3.3
+ area 0 authentication message-digest
+ passive-interface default
+ no passive-interface Port-channel1
+ no passive-interface Port-channel2
+ no passive-interface Port-channel3
+ no passive-interface FastEthernet0/6
+ network 10.1.254.3 0.0.0.0 area 0
+ network 10.1.255.0 0.0.0.3 area 0
+ network 10.1.255.12 0.0.0.3 area 0
+ network 10.1.255.8 0.0.0.3 area 0
+ network 10.1.255.20 0.0.0.3 area 0
+ network 10.1.100.0 0.0.0.255 area 0
+!
+end

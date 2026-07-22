@@ -1,0 +1,53 @@
+! ============================================================
+! ④ IGPルーティング : DSW2 （ディストリビューションL3SW / ABR）
+! 出典: 設計書_md/03_論理設計.md（論理設計⑧⑨）
+!       設問 02_パッシブインターフェース / 03_OSPFネットワークタイプ最適化
+! 内容: OSPF（エリア0/1境界, MD5認証, router-id手動, passive, P2P）
+! 前提: L3 IP/SVI/Po は ③ で設定済み
+! ============================================================
+!
+! ------------------------------------------------------------
+! ■ 不明点・確認事項（実機設定時に確認）
+!  - エリア設計: DSW-CSW-R間=エリア0、DSW配下=エリア1。DSWはABR。Lo0はエリア0。
+!  - Po3(DSW間)はL2トランクのためOSPF隣接なし（DSW1.txtの不明点参照）。
+!  - MD5認証: area 0 authentication message-digest + 各エリア0リンクにkey cisco123。
+!  - passive-interface default → CSW向け Po1/Po2 のみ解除（設問02準拠）。
+!  - /30リンクは point-to-point（設問03準拠）。
+!  - DSW2のPo1=CSW2向け(10.1.255.4/30), Po2=CSW1向け(10.1.255.12/30)。
+! ------------------------------------------------------------
+
+hostname DSW2
+!
+! ============================================================
+! エリア0リンクのOSPF設定（P2P + MD5）
+!   Po1: DSW2-CSW2(10.1.255.4/30) / Po2: DSW2-CSW1(10.1.255.12/30)
+! ============================================================
+interface Port-channel1
+ ip ospf network point-to-point
+ ip ospf message-digest-key 1 md5 cisco123
+!
+interface Port-channel2
+ ip ospf network point-to-point
+ ip ospf message-digest-key 1 md5 cisco123
+!
+! ============================================================
+! OSPFプロセス（router-id 2.2.2.2 / 論理設計⑧）
+! ============================================================
+router ospf 1
+ router-id 2.2.2.2
+ area 0 authentication message-digest
+ passive-interface default
+ no passive-interface Port-channel1
+ no passive-interface Port-channel2
+ network 10.1.254.2 0.0.0.0 area 0
+ network 10.1.255.4 0.0.0.3 area 0
+ network 10.1.255.12 0.0.0.3 area 0
+ network 10.1.10.0 0.0.0.255 area 1
+ network 10.1.20.0 0.0.0.255 area 1
+ network 10.1.30.0 0.0.0.255 area 1
+ network 10.1.40.0 0.0.0.255 area 1
+ network 10.1.50.0 0.0.0.255 area 1
+ network 10.1.60.0 0.0.0.255 area 1
+ network 10.1.99.0 0.0.0.7 area 1
+!
+end

@@ -1,0 +1,115 @@
+! ============================================================
+! ③ L３項目 : CSW1 （コアL3SW）
+! 出典: 設計書_md/03_論理設計.md（論理設計⑤⑥⑦）, 04_耐障害性.md
+!       設問 07_HSRPサーバGW / 08_EtherChannelLACP
+! 内容: 機器間L3 EtherChannel(/30) / CSW-R L3 / ループバック /
+!       サーバセグメントVLAN100 SVI+HSRP（CSW1 Active）
+! 前提: OSPF は ④、BGP(iBGP) は ⑦ で設定
+! ============================================================
+!
+! ------------------------------------------------------------
+! ■ 不明点・確認事項（実機設定時に確認）
+!  - CSWは②の対象外だったため、サーバセグメント用の L2 下地（VLAN100作成 /
+!    FE0/5 を VLAN100 アクセス / rapid-pvst / vtp transparent）を本ファイルに含む。
+!  - サーバGW HSRP: CSW1固定Active（priority 110>100）。R1向け上り FE0/6 を track
+!    し、IP-VPN方向を失ったら CSW2 へ切替（decrement 20）。設問07準拠。
+!    ※設問07の track 例は Gi0/0 表記だが、物理設計⑥では Router接続=FE0/6。
+!  - Po番号: Po1=DSW1向け, Po2=DSW2向け, Po3=CSW2向け。設問08準拠。
+!  - CSW-SVSW間をL2(VLAN100)とした解釈は SVSW.txt(②) の確認事項参照。
+!  - Gi0/1 は未使用のため shutdown。
+! ------------------------------------------------------------
+
+hostname CSW1
+!
+! --- サーバセグメント用 L2 下地 ---
+vtp mode transparent
+spanning-tree mode rapid-pvst
+vlan 100
+!
+! ============================================================
+! ループバック（論理設計⑦: CSW1 = 10.1.254.3/32）
+! ============================================================
+interface Loopback0
+ ip address 10.1.254.3 255.255.255.255
+!
+! ============================================================
+! CSW-DSW間 L3 EtherChannel（/30 / 論理設計⑥ / 設問08）
+!   Po1: CSW1-DSW1  FE0/1-2  10.1.255.0/30  CSW1=.1
+!   Po2: CSW1-DSW2  FE0/3-4  10.1.255.12/30 CSW1=.13
+! ============================================================
+interface range FastEthernet0/1 - 2
+ no switchport
+ channel-protocol lacp
+ channel-group 1 mode active
+ description To DSW1 (Po1 member)
+!
+interface Port-channel1
+ no switchport
+ ip address 10.1.255.1 255.255.255.252
+ description To DSW1 L3 EtherChannel
+!
+interface range FastEthernet0/3 - 4
+ no switchport
+ channel-protocol lacp
+ channel-group 2 mode active
+ description To DSW2 (Po2 member)
+!
+interface Port-channel2
+ no switchport
+ ip address 10.1.255.13 255.255.255.252
+ description To DSW2 L3 EtherChannel
+!
+! ============================================================
+! CSW間 L3 EtherChannel（/30 / 論理設計⑥ / 設問08）
+!   Po3: CSW1-CSW2  FE0/7-8  10.1.255.8/30  CSW1=.9
+! ============================================================
+interface range FastEthernet0/7 - 8
+ no switchport
+ channel-protocol lacp
+ channel-group 3 mode active
+ description To CSW2 (Po3 member)
+!
+interface Port-channel3
+ no switchport
+ ip address 10.1.255.9 255.255.255.252
+ description To CSW2 L3 EtherChannel
+!
+! ============================================================
+! CSW-R1間 L3リンク（単一 / 論理設計⑥）
+!   FE0/6  10.1.255.20/30  CSW1=.22（R1=.21）
+! ============================================================
+interface FastEthernet0/6
+ no switchport
+ ip address 10.1.255.22 255.255.255.252
+ description To R1 Gi0/0
+!
+! ============================================================
+! サーバスイッチ接続（L2 / VLAN100）
+!   FE0/5 → SVSW（サーバセグメントのL2）
+! ============================================================
+interface FastEthernet0/5
+ switchport mode access
+ switchport access vlan 100
+ description To SVSW
+!
+! ============================================================
+! サーバセグメント SVI + HSRP（論理設計⑤ / 設問07 / CSW1 Active）
+!   10.1.100.0/24  CSW1=.253  VIP=.200
+!   R1向け上り FE0/6 を track（decrement 20）
+! ============================================================
+interface Vlan100
+ ip address 10.1.100.253 255.255.255.0
+ no shutdown
+ standby 100 ip 10.1.100.200
+ standby 100 priority 110
+ standby 100 preempt
+ standby 100 timers msec 200 msec 750
+ standby 100 track FastEthernet0/6 decrement 20
+!
+! ============================================================
+! 未使用ポート
+! ============================================================
+interface GigabitEthernet0/1
+ shutdown
+!
+end

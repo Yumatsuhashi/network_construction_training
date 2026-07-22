@@ -1,0 +1,76 @@
+==================================================================
+④ IGPルーティング : 確認コマンド（show系）
+出典: 設計書_md/03_論理設計.md（論理設計⑧⑨） / 設問 02,03
+対象機器: DSW1, DSW2, CSW1, CSW2, R1, R2
+==================================================================
+
+【共通の確認観点】
+- OSPFネイバーが設計どおりのリンクでFULLになっているか
+- エリア設計（コア=area0 / DSW配下=area1）が正しいか、DSWがABRか
+- MD5認証が有効で、認証不一致でネイバーが落ちていないか
+- /30リンクが point-to-point でDR/BDRが選定されていないか
+- passive-interface でクライアント側にHelloが出ていないか
+- 全セグメント（クライアント/サーバ/機器間/ループバック）がルートに載るか
+
+【期待するOSPFネイバー関係（FULL）】
+  DSW1 ── CSW1(Po1) , DSW1 ── CSW2(Po2)
+  DSW2 ── CSW2(Po1) , DSW2 ── CSW1(Po2)
+  CSW1 ── CSW2(Po3)
+  CSW1 ── R1(Fa0/6) , CSW2 ── R2(Fa0/6)
+  ※DSW1-DSW2間はL2トランクのため直接隣接なし（CSW経由で経路交換）
+
+
+------------------------------------------------------------------
+■ DSW1 / DSW2（ABR）
+------------------------------------------------------------------
+show ip ospf neighbor              ! Po1/Po2の対向CSWがFULLか
+show ip ospf interface brief       ! Po1/Po2=area0, Vlan10-60/99=area1, cost等
+show ip ospf interface Port-channel1  ! Network Type: POINT_TO_POINT / 認証Enabled
+show ip protocols                  ! router-id, passive-interface一覧(クライアントVLAN)
+show ip route ospf                 ! O IA でサーバ/機器間/他系ルートを受信しているか
+show ip ospf border-routers        ! ABR/ASBRへの到達
+ping 10.1.254.3                    ! CSW1 Lo0 へ（OSPF経由の到達確認）
+
+  ▼ 期待値
+   - neighbor: 対向CSW2台がFULL（Po1,Po2）
+   - interface brief: Po1/Po2 が area 0、Vlan10-60,99 が area 1
+   - Network Type POINT_TO_POINT、Message digest authentication enabled
+   - passive: Vlan10-60,99 が Passive、Po1/Po2 は非Passive
+
+
+------------------------------------------------------------------
+■ CSW1 / CSW2
+------------------------------------------------------------------
+show ip ospf neighbor              ! DSW×2, 対向CSW, R がFULLか（計4隣接）
+show ip ospf interface brief       ! 全リンクarea0、Vlan100はPassive
+show ip route ospf                 ! O(area0内)/O IA(area1のクライアント)の受信
+show ip ospf database              ! LSDB（Type1/2/3）が想定どおりか
+ping 10.1.254.5                    ! R1 Lo0 へ（CSW1の場合）
+
+  ▼ 期待値
+   - neighbor: Po1(DSW),Po2(DSW),Po3(対向CSW),Fa0/6(R) がFULL
+   - クライアントVLAN(10.1.10.0/24等)を O IA で受信（DSWがarea1→area0へ集約）
+
+
+------------------------------------------------------------------
+■ R1 / R2
+------------------------------------------------------------------
+show ip ospf neighbor              ! CSW(Gi0/0)がFULLか
+show ip ospf interface brief       ! Gi0/0=area0、Gi0/1(IP-VPN)はOSPF対象外
+show ip route ospf                 ! 拠点内の全10.1.x.x を受信しているか
+show ip route 10.1.100.0           ! サーバセグメントへの経路
+
+  ▼ 期待値
+   - neighbor: 対向CSWがFULL（1隣接）
+   - Gi0/1(192.168.x.x)はOSPFに現れない
+   - 10.1.0.0/16配下（クライアント/サーバ/ループバック）が全て見える
+     → ⑦のBGP集約 10.1.0.0/16 の元ネットワークが揃う
+
+
+------------------------------------------------------------------
+■ 認証・整合トラブル時の切り分け
+------------------------------------------------------------------
+debug ip ospf adj                  ! 隣接確立の過程（認証不一致/ネットワークタイプ不一致）
+show ip ospf interface | include Network Type|authentication
+! 片側だけ point-to-point だと隣接不成立 → 両端一致を確認
+! MD5キー(cisco123)不一致だと "Mismatched Authentication" ログ

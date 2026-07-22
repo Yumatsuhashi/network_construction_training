@@ -1,0 +1,89 @@
+==================================================================
+③ L３項目 : 確認コマンド（show系）
+出典: 設計書_md/03_論理設計.md, 04_耐障害性.md / 設問 06,07,08
+対象機器: DSW1, DSW2, CSW1, CSW2, R1, R2
+==================================================================
+
+【共通の確認観点】
+- SVI/物理I/FのIPが論理設計③〜⑦の表と一致しているか
+- ループバックが設計どおりか（DSW1=.254.1 … R2=.254.6）
+- 機器間 /30 L3 EtherChannel が Up し、対向と疎通するか
+- HSRP が設計どおりの Active/Standby・VIP・タイマ・track で動作しているか
+- DHCPプールが払い出しできるか（DSW1=VLAN10,20,30 / DSW2=VLAN40,50,60）
+※ 機器間の到達性はOSPF(④)投入後に完全化。ここでは直結/30とHSRPを中心に確認。
+
+
+------------------------------------------------------------------
+■ DSW1 / DSW2
+------------------------------------------------------------------
+show ip interface brief                 ! 各SVI/Po/LoopbackのIP・状態
+show interfaces Port-channel1           ! CSW向けL3 Po1 が up/up か
+show interfaces Port-channel2           ! CSW向けL3 Po2 が up/up か
+show etherchannel summary               ! Po1,Po2(L3), Po3(L2/②) の状態
+show ip route connected                 ! /30・各SVIが接続ルートに載っているか
+!
+show standby brief                      ! 各VLANのHSRP Active/Standby/VIP一覧
+show standby Vlan10                      ! グループ10の詳細（priority/preempt/timers/track）
+show standby Vlan40                      ! DSW2側がActiveか（負荷分散確認）
+!
+show ip dhcp pool                        ! プール定義（DSW1=10,20,30 / DSW2=40,50,60）
+show ip dhcp binding                     ! 実際の払い出し状況
+ping 10.1.255.1                          ! DSW1→CSW1(Po1対向)へ疎通
+ping 10.1.255.17                         ! DSW1→CSW2(Po2対向)へ疎通 ※DSW1の場合
+
+  ▼ 期待値（DSW1）
+   - Vlan10/20/30/99: Active（priority 110, VIP .200 / VLAN99は.6）
+   - Vlan40/50/60: Standby（priority 100）
+   - Port-channel1(→CSW1 10.1.255.2), Port-channel2(→CSW2 10.1.255.18) up/up
+   - track: Po1/Po2 が Up のとき priority 110 維持
+  ▼ 期待値（DSW2）
+   - Vlan40/50/60: Active（110）／Vlan10/20/30/99: Standby（100）
+   - Port-channel1(→CSW2 10.1.255.6), Port-channel2(→CSW1 10.1.255.14) up/up
+
+
+------------------------------------------------------------------
+■ CSW1 / CSW2
+------------------------------------------------------------------
+show ip interface brief                 ! Po1/Po2/Po3/FE0/6/Loopback/Vlan100のIP
+show etherchannel summary               ! Po1,Po2(DSW向け),Po3(CSW間) が (SU)/(P)
+show interfaces Port-channel3           ! CSW間L3 Po3 が up/up か
+show ip route connected                 ! /30 と 10.1.100.0/24 が載っているか
+show vlan brief                         ! VLAN100 が存在し FE0/5 が access か
+!
+show standby brief                      ! サーバGW HSRP(grp100) の Active/Standby
+show standby Vlan100                     ! CSW1=Active(110)/CSW2=Standby(100)、trackの状態
+ping 10.1.255.2                          ! CSW1→DSW1(Po1対向)
+ping 10.1.255.21                         ! CSW1→R1(FE0/6対向) ※CSW1の場合
+ping 10.1.100.210                        ! CSW→SVSW管理IPへL2疎通
+
+  ▼ 期待値
+   - CSW1: Vlan100 Active（priority 110, VIP 10.1.100.200）、track FE0/6 Up
+   - CSW2: Vlan100 Standby（priority 100）
+   - Po1/Po2/Po3 すべて up/up、対向/30へping可
+
+
+------------------------------------------------------------------
+■ R1 / R2
+------------------------------------------------------------------
+show ip interface brief                 ! Gi0/0(CSW側)/Gi0/1(IP-VPN側)/Loopback0
+show ip route connected
+ping 10.1.255.22                          ! R1→CSW1(Gi0/0対向) ※R1の場合
+ping 192.168.11.1                         ! R1→IP-VPNキャリア側 ※疎通可否はキャリア次第
+
+  ▼ 期待値
+   - R1: Gi0/0=10.1.255.21, Gi0/1=192.168.11.2, Lo0=10.1.254.5 が up
+   - R2: Gi0/0=10.1.255.25, Gi0/1=192.168.12.2, Lo0=10.1.254.6 が up
+
+
+------------------------------------------------------------------
+■ HSRP フェイルオーバー試験（任意 / 設問06,07の条件確認）
+------------------------------------------------------------------
+! DSW1のCSW向け上りを1本ずつ落として切替挙動を確認
+DSW1# configure terminal
+DSW1(config)# interface Port-channel1
+DSW1(config-if)# shutdown            ! 1本喪失 → priority 110-6=104（Active維持を確認）
+! さらに
+DSW1(config)# interface Port-channel2
+DSW1(config-if)# shutdown            ! 2本喪失 → 110-12=98（DSW2へ切替を確認）
+! 確認後は no shutdown で復旧（preemptでDSW1がActiveへ復帰）
+show standby brief                    ! 切替の前後で Active がどちらかを確認

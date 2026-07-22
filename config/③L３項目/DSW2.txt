@@ -1,0 +1,150 @@
+! ============================================================
+! ③ L３項目 : DSW2 （ディストリビューションL3SW）
+! 出典: 設計書_md/03_論理設計.md（論理設計②③④⑤⑥⑦）, 04_耐障害性.md
+!       設問 06_HSRPクライアントGW
+! 内容: SVI+IP / ループバック / DSW-CSW間L3 EtherChannel(/30) / HSRP / DHCP
+! 前提: L2(VLAN/トランク/STP) は ②、OSPF は ④ で設定済みとする
+! ============================================================
+!
+! ------------------------------------------------------------
+! ■ 不明点・確認事項（実機設定時に確認）
+!  - Po番号: Po1=CSW2向け, Po2=CSW1向け（③のL3）, Po3=DSW間(②のL2)。設問08準拠。
+!  - HSRP track の Po1/Po2 は本ファイルで定義するCSW向けL3 EtherChannel。
+!    VLAN40,50,60でDSW2 Activeとし、2本喪失時のみDSW1へ切替（decrement 6×2）。
+!  - HSRPグループ番号は VLAN番号と同じ（VLAN40→grp40 等）。
+!  - DHCPサーバは論理設計②に従い DSW2=VLAN40,50,60 のみ。DNS等は未設定。
+!  - port-channel load-balance src-dst-mac は②でグローバル設定済み。
+! ------------------------------------------------------------
+
+hostname DSW2
+!
+! ============================================================
+! DHCP（DSW2担当: VLAN40,50,60 / 論理設計②④）
+!   配布範囲 .101-.199、既定GW=HSRP VIP .200
+! ============================================================
+ip dhcp excluded-address 10.1.40.1 10.1.40.100
+ip dhcp excluded-address 10.1.40.200 10.1.40.254
+ip dhcp excluded-address 10.1.50.1 10.1.50.100
+ip dhcp excluded-address 10.1.50.200 10.1.50.254
+ip dhcp excluded-address 10.1.60.1 10.1.60.100
+ip dhcp excluded-address 10.1.60.200 10.1.60.254
+!
+ip dhcp pool VLAN40
+ network 10.1.40.0 255.255.255.0
+ default-router 10.1.40.200
+!
+ip dhcp pool VLAN50
+ network 10.1.50.0 255.255.255.0
+ default-router 10.1.50.200
+!
+ip dhcp pool VLAN60
+ network 10.1.60.0 255.255.255.0
+ default-router 10.1.60.200
+!
+! ============================================================
+! ループバック（論理設計⑦: DSW2 = 10.1.254.2/32）
+! ============================================================
+interface Loopback0
+ ip address 10.1.254.2 255.255.255.255
+!
+! ============================================================
+! DSW-CSW間 L3 EtherChannel（/30 / 論理設計⑥ / 設問08）
+!   Po1: DSW2-CSW2  Gi0/1-2  10.1.255.4/30  DSW2=.6
+!   Po2: DSW2-CSW1  Gi0/3-4  10.1.255.12/30 DSW2=.14
+! ============================================================
+interface range GigabitEthernet0/1 - 2
+ no switchport
+ channel-protocol lacp
+ channel-group 1 mode active
+ description To CSW2 (Po1 member)
+!
+interface Port-channel1
+ no switchport
+ ip address 10.1.255.6 255.255.255.252
+ description To CSW2 L3 EtherChannel
+!
+interface range GigabitEthernet0/3 - 4
+ no switchport
+ channel-protocol lacp
+ channel-group 2 mode active
+ description To CSW1 (Po2 member)
+!
+interface Port-channel2
+ no switchport
+ ip address 10.1.255.14 255.255.255.252
+ description To CSW1 L3 EtherChannel
+!
+! ============================================================
+! クライアントVLAN SVI + HSRP（論理設計③④ / 設問06）
+!   DSW2 = VLAN40,50,60 の Active（priority 110）
+!         = VLAN10,20,30 の Standby（priority 100）
+!   共通: VIP=.200, preempt, timers 200/750ms
+!   Active側のみ CSW上りPo1/Po2 を track（decrement 6）
+! ============================================================
+interface Vlan10
+ ip address 10.1.10.254 255.255.255.0
+ no shutdown
+ standby 10 ip 10.1.10.200
+ standby 10 priority 100
+ standby 10 preempt
+ standby 10 timers msec 200 msec 750
+!
+interface Vlan20
+ ip address 10.1.20.254 255.255.255.0
+ no shutdown
+ standby 20 ip 10.1.20.200
+ standby 20 priority 100
+ standby 20 preempt
+ standby 20 timers msec 200 msec 750
+!
+interface Vlan30
+ ip address 10.1.30.254 255.255.255.0
+ no shutdown
+ standby 30 ip 10.1.30.200
+ standby 30 priority 100
+ standby 30 preempt
+ standby 30 timers msec 200 msec 750
+!
+interface Vlan40
+ ip address 10.1.40.254 255.255.255.0
+ no shutdown
+ standby 40 ip 10.1.40.200
+ standby 40 priority 110
+ standby 40 preempt
+ standby 40 timers msec 200 msec 750
+ standby 40 track Port-channel1 decrement 6
+ standby 40 track Port-channel2 decrement 6
+!
+interface Vlan50
+ ip address 10.1.50.254 255.255.255.0
+ no shutdown
+ standby 50 ip 10.1.50.200
+ standby 50 priority 110
+ standby 50 preempt
+ standby 50 timers msec 200 msec 750
+ standby 50 track Port-channel1 decrement 6
+ standby 50 track Port-channel2 decrement 6
+!
+interface Vlan60
+ ip address 10.1.60.254 255.255.255.0
+ no shutdown
+ standby 60 ip 10.1.60.200
+ standby 60 priority 110
+ standby 60 preempt
+ standby 60 timers msec 200 msec 750
+ standby 60 track Port-channel1 decrement 6
+ standby 60 track Port-channel2 decrement 6
+!
+! ============================================================
+! 管理VLAN99 SVI + HSRP（論理設計⑤ / DSW2 Standby）
+!   10.1.99.0/29  DSW2=.4  VIP=.6
+! ============================================================
+interface Vlan99
+ ip address 10.1.99.4 255.255.255.248
+ no shutdown
+ standby 99 ip 10.1.99.6
+ standby 99 priority 100
+ standby 99 preempt
+ standby 99 timers msec 200 msec 750
+!
+end
