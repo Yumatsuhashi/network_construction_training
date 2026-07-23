@@ -11,7 +11,8 @@
 !    明示的なプライオリティ値を使うなら spanning-tree vlan X priority Y に置換。
 !  - STPルート配置は HSRP Active 側（③）と一致させる想定
 !    （VLAN10,20,30,99→DSW1 / VLAN40,50,60→DSW2）。③のHSRPと整合確認。
-!  - Gi0/1-4（CSW接続）は L3。③で no switchport + IP(/30)。
+!  - 実機IF名: 物理設計の Gi0/x は、実機に合わせ FastEthernet1/0/x へ読み替える。
+!  - Fa1/0/1-4（CSW接続）は L3。③で no switchport + IP(/30)。
 !    L3ルーテッドEtherChannel(Po)化する場合の channel-group も③で設定。
 !  - vtp mode transparent は設計書に明記なし（標準運用として追加）。
 !  - 空きポート予約(物理設計⑤)の範囲は物理構成図に合わせて調整。
@@ -45,35 +46,35 @@ spanning-tree vlan 40,50,60 root secondary
 !
 ! ============================================================
 ! ASW 接続トランク（802.1q）
-!   Gi0/5 → ASW1 FE0/7 ／ Gi0/6 → ASW2 FE0/7
+!   Fa1/0/5 → ASW1 Gi1/0/7 ／ Fa1/0/6 → ASW2 Gi1/0/7
 ! ============================================================
-interface GigabitEthernet0/5
+interface FastEthernet1/0/5
  switchport trunk encapsulation dot1q
  switchport mode trunk
  switchport trunk allowed vlan 10,20,30,40,50,60,99
- description To ASW1 FE0/7
+ description To ASW1 Gi1/0/7
 !
-interface GigabitEthernet0/6
+interface FastEthernet1/0/6
  switchport trunk encapsulation dot1q
  switchport mode trunk
  switchport trunk allowed vlan 10,20,30,40,50,60,99
- description To ASW2 FE0/7
+ description To ASW2 Gi1/0/7
 !
 ! ============================================================
 ! DSW間 L2 EtherChannel（LACP / Po3 / 設問08）
-!   Gi0/7-8 → DSW2 Gi0/7-8
+!   Fa1/0/7-8 → DSW2 Fa1/0/7-8
 !   負荷分散アルゴリズム: 送信元・宛先MAC（src-dst-mac）
 !   ※Po番号は設問08に合わせ Po1=CSW1向け, Po2=CSW2向け(③), Po3=DSW間
 ! ============================================================
 port-channel load-balance src-dst-mac
 !
-interface range GigabitEthernet0/7 - 8
+interface range FastEthernet1/0/7 - 8
  switchport trunk encapsulation dot1q
  switchport mode trunk
  switchport trunk allowed vlan 10,20,30,40,50,60,99
  channel-protocol lacp
  channel-group 3 mode active
- description To DSW2 (Po3 member)
+ description To DSW2 Fa1/0/7-8 (Po3 member)
 !
 interface Port-channel3
  switchport trunk encapsulation dot1q
@@ -82,7 +83,7 @@ interface Port-channel3
  description DSW1-DSW2 L2 EtherChannel
 !
 ! ============================================================
-! CSW 接続ポート（Gi0/1-4）は L3 ルーテッドEtherChannel/リンク
+! CSW 接続ポート（Fa1/0/1-4）は L3 ルーテッドEtherChannel/リンク
 !   → ③L３項目 で no switchport + IP(/30) を設定する
 ! ============================================================
 !
@@ -90,7 +91,7 @@ interface Port-channel3
 ! 未使用/予約ポート（物理設計④⑤）
 !   空きポートは ASW 増設用に予約（未接続の間は shutdown）
 ! ============================================================
-! interface range GigabitEthernet0/9 - 12
+! interface range FastEthernet1/0/9 - 12
 !  shutdown
 !
 end

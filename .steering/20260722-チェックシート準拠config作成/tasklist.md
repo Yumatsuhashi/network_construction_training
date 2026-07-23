@@ -66,6 +66,13 @@
   - [x] SVSW.txt（VLAN100アクセス/CSW接続）
 - [x] 確認コマンド.txt（show vlan / show interfaces trunk / show etherchannel / show spanning-tree 等）
 
+### ②整合メモ（2026-07-23 実機IF名反映）
+- [x] ユーザー提示の実機 `show ip interface brief` とポート規則に合わせ、`config/②初期設定・L2項目/` のIF名を更新。
+  - ASW1/ASW2/SVSW: 物理設計の `FE0/x` を実機 `GigabitEthernet1/0/x` に読み替え。
+  - DSW1/DSW2: 物理設計の `Gi0/x` を実機 `FastEthernet1/0/x` に読み替え。
+  - CSW/R は現行configの表記を維持する前提。②L2ではCSW/R対象なし。
+- [x] ASW1/ASW2 の実機で `switchport trunk encapsulation dot1q` が非対応だったため、ASW側トランクから当該行を削除（802.1Q固定機種のため `switchport mode trunk` で足りる）。
+
 ## フェーズ2: ③L３項目
 
 - [x] 根拠読み込み（設問06,07 / 設計書03論理設計③〜⑦・04耐障害性）

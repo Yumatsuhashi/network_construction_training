@@ -7,7 +7,8 @@
 !
 ! ------------------------------------------------------------
 ! ■ 不明点・確認事項（実機設定時に確認）
-!  - CSW接続(FE0/7-8)を L2 access VLAN100 とした。物理設計④は「サーバSW接続の
+!  - 実機IF名: 物理設計の FE0/x は、実機に合わせ GigabitEthernet1/0/x へ読み替える。
+!  - CSW接続(Gi1/0/7-8)を L2 access VLAN100 とした。物理設計④は「サーバSW接続の
 !    コアレイヤ側ポートはL3ポートで接続」と記載があるが、サーバGWのHSRP
 !    （VIP 10.1.100.200 / 設問07）成立には CSW側が VLAN100 の SVI である必要が
 !    あるため、SVSW-CSW間はL2と解釈している。CSW側の最終形は③で確定。要確認。
@@ -31,24 +32,24 @@ vlan 100
 !
 ! ============================================================
 ! サーバ接続アクセスポート（VLAN100）
-!   FE0/1-6 → サーバ（監視サーバ 10.1.100.1 等）
+!   Gi1/0/1-6 → サーバ（監視サーバ 10.1.100.1 等）
 ! ============================================================
-interface range FastEthernet0/1 - 6
+interface range GigabitEthernet1/0/1 - 6
  switchport mode access
  switchport access vlan 100
  spanning-tree portfast
 !
 ! ============================================================
 ! CSW 接続ポート（VLAN100 / サーバセグメントのL2上位）
-!   FE0/7 → CSW1 ／ FE0/8 → CSW2
+!   Gi1/0/7 → CSW1 ／ Gi1/0/8 → CSW2
 !   ※CSW側はSVI VLAN100+HSRPで冗長化（③で設定）
 ! ============================================================
-interface FastEthernet0/7
+interface GigabitEthernet1/0/7
  switchport mode access
  switchport access vlan 100
  description To CSW1
 !
-interface FastEthernet0/8
+interface GigabitEthernet1/0/8
  switchport mode access
  switchport access vlan 100
  description To CSW2
@@ -67,9 +68,7 @@ ip default-gateway 10.1.100.200
 ! 未使用ポート（物理設計②「未使用ポートはshutdownしておく」）
 !   ※機種の実ポート数に合わせて範囲を調整すること
 ! ============================================================
-! interface range FastEthernet0/9 - 24
-!  shutdown
-! interface range GigabitEthernet0/1 - 2
+! interface range GigabitEthernet1/0/9 - 24
 !  shutdown
 !
 end

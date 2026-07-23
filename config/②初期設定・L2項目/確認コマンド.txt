@@ -20,19 +20,19 @@ show running-config                     ! ホスト名・全体設定の確認
 show vlan brief                         ! VLAN10,20,30,40,50,60,99 が存在するか
 show vtp status                         ! VTP Mode: Transparent か
 show interfaces status                  ! 各ポートのVLAN割当・接続状態
-show interfaces trunk                   ! FE0/7,FE0/8 がトランク/allowed vlanか
+show interfaces trunk                   ! Gi1/0/7,Gi1/0/8 がトランク/allowed vlanか
 show spanning-tree summary              ! rapid-pvst モードか
 show spanning-tree vlan 10              ! DSW1 がルート（Root）に見えるか（VLAN10)
 show spanning-tree vlan 40              ! DSW2 がルートに見えるか（VLAN40)
-show spanning-tree interface fa0/1 portfast   ! クライアントポートがPortFast/edgeか
+show spanning-tree interface gi1/0/1 portfast ! クライアントポートがPortFast/edgeか
 show interfaces vlan99                  ! 管理IP(ASW1=.1 / ASW2=.2)がupか
 ping 10.1.99.6                          ! DSW VIP(既定GW)へ到達できるか ※③以降で有効
 
   ▼ 期待値
    - show vlan brief: 10,20,30,40,50,60,99 が active
-   - show interfaces trunk: Fa0/7,Fa0/8 が trunking, allowed 10,20,30,40,50,60,99
-   - VLAN10/20/30/99 は Fa0/7(DSW1側)がForwarding, Fa0/8(DSW2側)がBlocking
-   - VLAN40/50/60 は Fa0/8(DSW2側)がForwarding, Fa0/7(DSW1側)がBlocking
+   - show interfaces trunk: Gi1/0/7,Gi1/0/8 が trunking, allowed 10,20,30,40,50,60,99
+   - VLAN10/20/30/99 は Gi1/0/7(DSW1側)がForwarding, Gi1/0/8(DSW2側)がBlocking
+   - VLAN40/50/60 は Gi1/0/8(DSW2側)がForwarding, Gi1/0/7(DSW1側)がBlocking
    - portfast: "edge" と表示
 
 
@@ -42,19 +42,19 @@ ping 10.1.99.6                          ! DSW VIP(既定GW)へ到達できるか
 show running-config
 show vlan brief                         ! 10,20,30,40,50,60,99 が存在するか
 show vtp status                         ! Transparent か
-show interfaces trunk                   ! Gi0/5,Gi0/6,Po1 が trunk か
+show interfaces trunk                   ! Fa1/0/5,Fa1/0/6,Po3 が trunk か
 show spanning-tree vlan 10              ! DSW1=Root(primary) / DSW2=secondary（VLAN10)
 show spanning-tree vlan 40              ! DSW2=Root(primary) / DSW1=secondary（VLAN40)
 show spanning-tree root                 ! 各VLANのルートブリッジ配置を一覧確認
-show etherchannel summary               ! Po1 が (SU) / メンバー Gi0/7,Gi0/8 が (P)
-show etherchannel 1 port-channel        ! LACP・メンバー状態の詳細
+show etherchannel summary               ! Po3 が (SU) / メンバー Fa1/0/7,Fa1/0/8 が (P)
+show etherchannel 3 port-channel        ! LACP・メンバー状態の詳細
 show etherchannel load-balance          ! Load Balance: src-dst-mac か
-show interfaces port-channel 1          ! Po1 のトランク状態
+show interfaces port-channel 3          ! Po3 のトランク状態
 
   ▼ 期待値
    - show spanning-tree vlan 10: DSW1 で "This bridge is the root"
    - show spanning-tree vlan 40: DSW2 で "This bridge is the root"
-   - show etherchannel summary: Po1(SU), Gi0/7(P) Gi0/8(P)、Protocol=LACP
+   - show etherchannel summary: Po3(SU), Fa1/0/7(P) Fa1/0/8(P)、Protocol=LACP
    - show etherchannel load-balance: Src-Dst MAC
 
 
@@ -64,13 +64,13 @@ show interfaces port-channel 1          ! Po1 のトランク状態
 show running-config
 show vlan brief                         ! VLAN100 が存在するか
 show vtp status                         ! Transparent か
-show interfaces status                  ! FE0/1-8 が VLAN100 か
+show interfaces status                  ! Gi1/0/1-8 が VLAN100 か
 show spanning-tree vlan 100             ! ループ構成でBlockingポートが1つ選ばれているか
 show interfaces vlan100                 ! 管理IP 10.1.100.210 が up か
 ping 10.1.100.200                       ! CSW VIP(既定GW)へ到達できるか ※③以降で有効
 
   ▼ 期待値
-   - show vlan brief: VLAN100 が active、FE0/1-8 が Vlan100
+   - show vlan brief: VLAN100 が active、Gi1/0/1-8 が Vlan100
    - SVSW-CSW1-CSW2 間のL2でループが無いよう、いずれかのポートがBlocking
 
 
