@@ -52,10 +52,6 @@ interface range FastEthernet0/3 - 4
  channel-group 2 mode active
  description To DSW1 (Po2 member)
 !
-interface Port-channel2
- no switchport
- ip address 10.1.255.17 255.255.255.252
- description To DSW1 L3 EtherChannel
 !
 ! ============================================================
 ! CSW間 L3 EtherChannel（/30 / 論理設計⑥ / 設問08）
@@ -67,10 +63,6 @@ interface range FastEthernet0/7 - 8
  channel-group 3 mode active
  description To CSW1 (Po3 member)
 !
-interface Port-channel3
- no switchport
- ip address 10.1.255.10 255.255.255.252
- description To CSW1 L3 EtherChannel
 !
 ! ============================================================
 ! CSW-R2間 L3リンク（単一 / 論理設計⑥）

@@ -1,25 +1,7 @@
-==================================================================
-② 初期設定・L2項目 : 動作確認結果
-実施日: 2026-07-23
-対象: DSW1, DSW2, ASW1, ASW2（実機投入・console接続で確認）
-参照: 確認コマンド.txt の期待値と照合
-==================================================================
-
-【総括】
-- DSW2: STP Root配置・EtherChannel(Po3/LACP) とも期待通り。問題なし。
-- ASW2: 初回確認時に spanning-tree mode が pvst のままだった（rapid-pvst未反映）。
-        spanning-tree mode rapid-pvst を再投入し解消・確認済み。
-- DSW1: 「投入済み」との申告のみで、実機からのshow出力による確認はまだ未実施。
-- 確認コマンド.txt に記載の項目のうち、DSW2は一部（下記「未実施」参照）が残っている。
 
 
-------------------------------------------------------------------
-■ DSW2
-------------------------------------------------------------------
-
---- 実行コマンドと出力 ---
-
-DSW2#show spanning-tree summary
+DSW2#sh spanning-tree su
+DSW2#sh spanning-tree summary 
 Switch is in rapid-pvst mode
 Root bridge for: VLAN0040, VLAN0050, VLAN0060
 Extended system ID           is enabled
@@ -45,68 +27,42 @@ VLAN0099                     0         0        0          3          3
 ---------------------- -------- --------- -------- ---------- ----------
 8 vlans                      3         0        0         22         25
 
-DSW2#show etherchannel summary
+
+DSW2#sh etherchannel sum      
 Flags:  D - down        P - bundled in port-channel
         I - stand-alone s - suspended
         H - Hot-standby (LACP only)
         R - Layer3      S - Layer2
         U - in use      f - failed to allocate aggregator
+
         M - not in use, minimum links not met
         u - unsuitable for bundling
         w - waiting to be aggregated
         d - default port
+
 
 Number of channel-groups in use: 1
 Number of aggregators:           1
 
 Group  Port-channel  Protocol    Ports
 ------+-------------+-----------+-----------------------------------------------
-3      Po3(SU)         LACP      Fa1/0/7(P)  Fa1/0/8(P)
-
---- 期待値との照合 ---
-
-| 確認項目                          | 期待値                                    | 実際                                   | 判定 |
-|-----------------------------------|--------------------------------------------|----------------------------------------|------|
-| STP mode                          | rapid-pvst                                  | rapid-pvst mode                        | OK   |
-| STP Root配置（VLAN40,50,60）      | DSW2がRoot                                  | Root bridge for: VLAN0040,0050,0060    | OK   |
-| STP Root配置（VLAN10,20,30,99）   | DSW2はRootでない（DSW1側がRoot想定）        | Root一覧に含まれず                     | OK   |
-| EtherChannel Po3                  | Po3(SU), Fa1/0/7(P) Fa1/0/8(P), Protocol=LACP | 一致                                  | OK   |
-
---- 未実施（確認コマンド.txt記載分、次回に持ち越し） ---
-- show running-config
-- show vlan brief
-- show vtp status
-- show interfaces trunk
-- show spanning-tree vlan 10 / vlan 40（個別コマンドでの厳密確認）
-- show spanning-tree root
-- show etherchannel 3 port-channel（詳細）
-- show etherchannel load-balance（src-dst-mac になっているか）
-- show interfaces port-channel 3
+3      Po3(SU)         LACP      Fa1/0/7(P)  Fa1/0/8(P)  
 
 
-------------------------------------------------------------------
-■ ASW2
-------------------------------------------------------------------
-
---- 初回確認（NG）---
-
-ASW2#sh spanning-tree sum
-Switch is in pvst mode          ← 期待値は rapid-pvst mode（NG）
-Root bridge for: none
-...
-7 vlans (10,20,30,40,50,60,99)  active
-
---- 対応 ---
-configure terminal
- spanning-tree mode rapid-pvst
-end
-
---- 再確認（OK）---
 
 ASW2#sh spanning-tree sum
 Switch is in rapid-pvst mode
 Root bridge for: none
-...
+EtherChannel misconfig guard is enabled
+Extended system ID           is enabled
+Portfast Default             is disabled
+PortFast BPDU Guard Default  is disabled
+Portfast BPDU Filter Default is disabled
+Loopguard Default            is disabled
+UplinkFast                   is disabled
+BackboneFast                 is disabled
+Configured Pathcost method used is short
+
 Name                   Blocking Listening Learning Forwarding STP Active
 ---------------------- -------- --------- -------- ---------- ----------
 VLAN0010                     1         0        0          1          2
@@ -115,36 +71,11 @@ VLAN0030                     1         0        0          1          2
 VLAN0040                     1         0        0          1          2
 VLAN0050                     1         0        0          1          2
 VLAN0060                     1         0        0          1          2
-VLAN0099                     1         0        0          1          2
+VLAN0
+*Mar  1 02:42:07.534: %SYS-5-CONFIG_I: Configured from console by 099                     1         0        0          1          2
 ---------------------- -------- --------- -------- ---------- ----------
 7 vlans                      7         0        0          7         14
 
-（出力中の "%SYS-5-CONFIG_I: Configured from console by ..." は上記re投入のsyslog通知。異常ではない）
-
---- 期待値との照合 ---
-
-| 確認項目           | 期待値                          | 実際                     | 判定 |
-|---------------------|----------------------------------|---------------------------|------|
-| STP mode             | rapid-pvst                       | rapid-pvst mode（修正後） | OK   |
-| STP Root配置         | none（アクセスSWなのでRoot無し） | Root bridge for: none     | OK   |
-| VLAN                 | 10,20,30,40,50,60,99 が active   | 7 vlans すべてActive       | OK   |
 
 
-------------------------------------------------------------------
-■ DSW1
-------------------------------------------------------------------
-投入済みとの申告のみ。show系コマンドによる実機確認は未実施（次回に持ち越し）。
 
-
-------------------------------------------------------------------
-■ ASW1
-------------------------------------------------------------------
-config投入は実施済みだが、show系コマンドによる実機確認結果はまだ未取得（次回に持ち越し）。
-
-
-==================================================================
-次回再開ポイント
-==================================================================
-1. DSW2の未実施コマンド（上記一覧）を実行し、VLAN/VTP/トランク/load-balanceを確認
-2. DSW1・ASW1についても確認コマンド.txt記載のshow系コマンドで実機確認
-3. 全機器の確認が終わったら ②初期設定・L2項目 は完了とし、③L３項目 の実機投入へ進む

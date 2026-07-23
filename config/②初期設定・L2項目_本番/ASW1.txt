@@ -21,9 +21,6 @@
 
 hostname ASW1
 !
-! --- VTP: VLANの誤伝播を防ぐため transparent 運用 ---
-vtp mode transparent
-!
 ! --- STP: 高速収束のため Rapid PVST+ ---
 spanning-tree mode rapid-pvst
 !
@@ -91,23 +88,5 @@ interface FastEthernet0/8
  switchport trunk allowed vlan 10,20,30,40,50,60,99
  description To DSW2 Gi0/5
 !
-! ============================================================
-! 管理VLAN99（Telnet管理用 / 論理設計⑤: 10.1.99.0/29）
-!   ASW1 = 10.1.99.1 ／ デフォルトGW = DSW VIP 10.1.99.6
-! ============================================================
-interface Vlan99
- ip address 10.1.99.1 255.255.255.248
- no shutdown
-!
-ip default-gateway 10.1.99.6
-!
-! ============================================================
-! 未使用ポート（物理設計②「未使用ポートはshutdownしておく」）
-!   ※機種の実ポート数に合わせて範囲を調整すること
-! ============================================================
-! interface range FastEthernet0/9 - 24
-!  shutdown
-! interface range GigabitEthernet0/1 - 2
-!  shutdown
 !
 end
