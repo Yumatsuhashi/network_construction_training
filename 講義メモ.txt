@@ -33,3 +33,8 @@ vlanを作ってIPを割り振る
 ・no swにすることでvlanは使わなくなる→だからCVSW側でfa0/7,8をsw mo acc にする しかしfa0/7,8に対してvlanタグをつける
 
 
+・デフォルトのdecrementは10だからCSW1,2においてCSW1→priority 105 CSW2→100とかに設定しておくだけで自然とactive passiveが変わっている
+CSW1→priority 100 CSW2→100　にしたら、、、
+同じ数値になってしまうから　activeのまま だからpriorityを同じ数値にしてはいけない
+
+
