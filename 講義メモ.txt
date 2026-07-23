@@ -36,5 +36,7 @@ vlanを作ってIPを割り振る
 ・デフォルトのdecrementは10だからCSW1,2においてCSW1→priority 105 CSW2→100とかに設定しておくだけで自然とactive passiveが変わっている
 CSW1→priority 100 CSW2→100　にしたら、、、
 同じ数値になってしまうから　activeのまま だからpriorityを同じ数値にしてはいけない
+IPアドレスが切り替わる
+
 
 
