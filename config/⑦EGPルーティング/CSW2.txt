@@ -1,0 +1,33 @@
+! ============================================================
+! ⑦ EGPルーティング : CSW2 （コアL3SW / iBGPフルメッシュ参加）
+! 出典: 設計書_md/08_拠点間接続設計.md / 設問 19_iBGPフルメッシュ
+! 内容: iBGPフルメッシュ（拠点内, Loopback, 認証なし）
+! 前提: ループバックは③、OSPF(ループバック到達性)は④で設定済み
+! ============================================================
+!
+! ------------------------------------------------------------
+! ■ 不明点・確認事項（実機設定時に確認）
+!  - CSWは経路をoriginateせず、拠点間経路の受信・転送のためiBGP参加（設問19）。
+!  - 自分以外の全5ノード(DSW1,DSW2,CSW1,R1,R2)とピア。認証なし、update-source Lo0。
+!  - eBGP学習経路のnext-hopはR1/R2側でnext-hop-self済み。
+! ------------------------------------------------------------
+
+hostname CSW2
+!
+! ============================================================
+! BGP（AS65001 / iBGPフルメッシュ）
+!   自機 Lo0=10.1.254.4。ピア: DSW1(.1) DSW2(.2) CSW1(.3) R1(.5) R2(.6)
+! ============================================================
+router bgp 65001
+ neighbor 10.1.254.1 remote-as 65001
+ neighbor 10.1.254.1 update-source Loopback0
+ neighbor 10.1.254.2 remote-as 65001
+ neighbor 10.1.254.2 update-source Loopback0
+ neighbor 10.1.254.3 remote-as 65001
+ neighbor 10.1.254.3 update-source Loopback0
+ neighbor 10.1.254.5 remote-as 65001
+ neighbor 10.1.254.5 update-source Loopback0
+ neighbor 10.1.254.6 remote-as 65001
+ neighbor 10.1.254.6 update-source Loopback0
+!
+end

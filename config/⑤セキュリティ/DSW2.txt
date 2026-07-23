@@ -1,0 +1,55 @@
+! ============================================================
+! ⑤ セキュリティ : DSW2 （ディストリビューションL3SW）
+! 出典: 設計書_md/06_セキュリティ.md
+!       設問 09_DHCPスヌーピング / 12_TelnetアクセスリストACL
+! 内容: DHCP Snooping（DSWもDHCPサーバ）/ Telnet制御ACL
+! 前提: VLAN/SVI/HSRP/DHCPプール は ②③ で設定済み
+! ============================================================
+!
+! ------------------------------------------------------------
+! ■ 不明点・確認事項（実機設定時に確認）
+!  - DSWもDHCPサーバのため DHCP Snooping 有効化。trust は対向DSW向け Po3。
+!  - `no ip dhcp snooping information option` を付与。
+!  - Telnet ACL適用範囲【設問12からの意図的な変更】: HSRPで両DSWが全クライアント
+!    VLANのSVIを持つため、DSW1/DSW2双方の Vlan10,20,30,40,50 に in で適用。
+!    VLAN60(システム部)は全許可のため適用しない。DSW1.txtと同一方針。
+! ------------------------------------------------------------
+
+hostname DSW2
+!
+! ============================================================
+! DHCP Snooping（不正DHCPサーバ対策 / 設問09）
+!   有効VLAN: 10,20,30,40,50,60,99 ／ trust: 対向DSW向け Po3
+! ============================================================
+no ip dhcp snooping information option
+ip dhcp snooping
+ip dhcp snooping vlan 10,20,30,40,50,60,99
+!
+interface Port-channel3
+ ip dhcp snooping trust
+!
+! ============================================================
+! Telnet制御ACL（クライアント→任意宛のTelnet禁止/他許可 / 設問12）
+! ============================================================
+ip access-list extended BLOCK_TELNET
+ deny tcp any any eq 23
+ permit ip any any
+!
+interface Vlan10
+ ip access-group BLOCK_TELNET in
+!
+interface Vlan20
+ ip access-group BLOCK_TELNET in
+!
+interface Vlan30
+ ip access-group BLOCK_TELNET in
+!
+interface Vlan40
+ ip access-group BLOCK_TELNET in
+!
+interface Vlan50
+ ip access-group BLOCK_TELNET in
+!
+! Vlan60(システム部)は全アクセス許可のため ACL 適用しない
+!
+end

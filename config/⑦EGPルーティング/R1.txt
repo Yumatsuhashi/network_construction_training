@@ -1,0 +1,73 @@
+! ============================================================
+! ⑦ EGPルーティング : R1 （拠点間接続ルータ）
+! 出典: 設計書_md/08_拠点間接続設計.md
+!       設問 17_R1のBGP / 19_iBGPフルメッシュ / 20_集約 / 21_LocalPref / 22_ASパスプリペンド
+! 内容: eBGP(対IP-VPN) / iBGPフルメッシュ / 集約10.1.0.0/16 / 経路調整
+! 前提: I/F・ループバックは③、OSPF(ループバック到達性)は④で設定済み
+! ============================================================
+!
+! ------------------------------------------------------------
+! ■ 不明点・確認事項（実機設定時に確認）
+!  - 【設問に無いが必須】iBGPネイバーに next-hop-self を付与。理由: R1のIP-VPN側
+!    Gi0/1(192.168.11.0/30)は④でOSPF非対象のため、eBGP学習経路のnext-hop
+!    192.168.11.1 を内部(CSW/DSW)から解決できない。next-hop-selfでR1自身
+!    (Lo0 10.1.254.5, OSPF到達可)をnext-hopに書き換える。
+!  - 【集約方式/設問20】OSPFをBGPへredistributeしない設計のため aggregate-address
+!    だけでは元詳細経路がBGP表に無く集約が生成されない。動作する方式1
+!    (network + ip route Null0)を採用。方式2(aggregate-address summary-only)は
+!    redistribute等で詳細経路をBGP表に載せる場合に有効（本設計では未使用）。
+!  - 192.168.11.0/30 は network文もredistributeもしないため内部BGP表に出さない
+!    （設問19の「DSW/CSWのBGP表に192.168が無いこと」を満たす）。
+!  - R1の担当: 拠点3(10.3.0.0/16)宛をR1優先(Local Preference 200 in)、
+!    戻り経路はR1優先のためプリペンドはR2側に付与（R1は付けない）。
+!  - BGP router-idはデフォルトで最上位ループバック(10.1.254.5)を使用（OSPF rid
+!    5.5.5.5とは別物）。明示するなら bgp router-id を追加。
+! ------------------------------------------------------------
+
+hostname R1
+!
+! ============================================================
+! 経路調整用 prefix-list / route-map（設問21: 拠点3宛をR1優先）
+! ============================================================
+ip prefix-list SITE3-ROUTE permit 10.3.0.0/16
+!
+route-map SET-LOCALPREF-IN permit 10
+ match ip address prefix-list SITE3-ROUTE
+ set local-preference 200
+route-map SET-LOCALPREF-IN permit 20
+!
+! ============================================================
+! 集約ルート用 静的経路（方式1 / 設問20）
+! ============================================================
+ip route 10.1.0.0 255.255.0.0 Null0
+!
+! ============================================================
+! BGP（AS65001）
+! ============================================================
+router bgp 65001
+ ! --- eBGP: IP-VPN網（対向AS64999, 認証cisco123 / 設問17）---
+ neighbor 192.168.11.1 remote-as 64999
+ neighbor 192.168.11.1 password cisco123
+ neighbor 192.168.11.1 route-map SET-LOCALPREF-IN in
+ !
+ ! --- iBGP フルメッシュ（拠点内, Loopback, 認証なし / 設問19）---
+ neighbor 10.1.254.6 remote-as 65001
+ neighbor 10.1.254.6 update-source Loopback0
+ neighbor 10.1.254.6 next-hop-self
+ neighbor 10.1.254.3 remote-as 65001
+ neighbor 10.1.254.3 update-source Loopback0
+ neighbor 10.1.254.3 next-hop-self
+ neighbor 10.1.254.4 remote-as 65001
+ neighbor 10.1.254.4 update-source Loopback0
+ neighbor 10.1.254.4 next-hop-self
+ neighbor 10.1.254.1 remote-as 65001
+ neighbor 10.1.254.1 update-source Loopback0
+ neighbor 10.1.254.1 next-hop-self
+ neighbor 10.1.254.2 remote-as 65001
+ neighbor 10.1.254.2 update-source Loopback0
+ neighbor 10.1.254.2 next-hop-self
+ !
+ ! --- 集約ルート 10.1.0.0/16 をIP-VPNへ広告（方式1 / 設問20）---
+ network 10.1.0.0 mask 255.255.0.0
+!
+end

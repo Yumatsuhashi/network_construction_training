@@ -1,0 +1,59 @@
+==================================================================
+⑥ 管理項目 : 確認コマンド（show系）
+出典: 設計書_md/07_管理.md / 設問 13,14,15,16
+対象機器: ASW1, ASW2, DSW1, DSW2, CSW1, CSW2, R1, R2, SVSW（全機器）
+==================================================================
+
+【共通の確認観点】
+- NTPが 10.1.100.1 と同期し、実時刻でログが記録されるか
+- SNMPコミュニティ TSHOOT(RW)、Trap先 10.1.100.1、（Loopback機は）送信元Loopback0か
+- Syslogが 10.1.100.1 へ、（Loopback機は）送信元Loopback0で送られるか
+- enable secret / VTYパスワードが cisco123 で機能するか
+
+
+------------------------------------------------------------------
+■ 全機器共通
+------------------------------------------------------------------
+show ntp status                    ! Clock is synchronized / reference 10.1.100.1
+show ntp associations              ! 10.1.100.1 が候補(*)になっているか
+show clock detail                  ! 現在時刻・時刻源（NTP）
+show running-config | include service timestamps   ! datetime msec localtime か
+show snmp                          ! SNMP有効・送信統計
+show running-config | include snmp-server           ! community/host/trap-source
+show logging                       ! Trap logging: 10.1.100.1、source-interface
+show running-config | section line vty              ! password/login
+show running-config | include enable secret
+
+  ▼ 期待値（全機器）
+   - show ntp status: "Clock is synchronized"、reference=10.1.100.1
+   - snmp-server community TSHOOT RW / host 10.1.100.1 version 2c TSHOOT
+   - logging host 10.1.100.1
+   - line vty 0 4 に password cisco123 + login、enable secret 設定済み
+
+
+------------------------------------------------------------------
+■ ループバック保有機器のみ（DSW1,DSW2,CSW1,CSW2,R1,R2）
+------------------------------------------------------------------
+show running-config | include trap-source           ! snmp-server trap-source Loopback0
+show running-config | include logging source        ! logging source-interface Loopback0
+show logging | include Trap|source                  ! 送信元がLoopback0か
+
+  ▼ 期待値
+   - SNMP Trap / Syslog の送信元が Loopback0（DSW1=10.1.254.1 … R2=10.1.254.6）
+   - 監視サーバ側で送信元アドレスが安定した10.1.254.xで見える
+
+
+------------------------------------------------------------------
+■ ループバック非保有機器（ASW1,ASW2,SVSW）
+------------------------------------------------------------------
+! trap-source / source-interface が「無い」ことを確認（設定されていないのが正）
+show running-config | include source
+  ▼ 期待値: 出力なし（送信元は管理SVIのアドレス:ASW1=10.1.99.1 / SVSW=10.1.100.210）
+
+
+------------------------------------------------------------------
+■ 動作試験（任意）
+------------------------------------------------------------------
+! 別機器からTelnetでログイン → VTYパスワード cisco123 を要求される
+! enable → enable secret cisco123 を要求される
+! logging test 等でSyslogサーバにログ到達を確認（時刻が実時刻か）

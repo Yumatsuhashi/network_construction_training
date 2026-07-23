@@ -18,4 +18,12 @@
 
 
 
-・
+・L3のether channelとL2のehterchannelは違う
+L3のether channelはno sw　が必要　これはL3SWにおいてL2のポートではなくL3のポートとして使えるようにする
+trunk/accessを使えなくなるかわりにIPアドレスを触れるようになる
+
+
+・vlan99は管理用
+L2SWにはサブインターフェースでIPを割り振れない　
+vlanを作ってIPを割り振る
+

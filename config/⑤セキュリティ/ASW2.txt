@@ -1,0 +1,40 @@
+! ============================================================
+! ⑤ セキュリティ : ASW2 （2F アクセススイッチ）
+! 出典: 設計書_md/06_セキュリティ.md
+!       設問 09_DHCPスヌーピング / 10_ポートセキュリティ / 11_BPDUフィルタ
+! 内容: DHCP Snooping / Port Security / BPDU Filter
+! 前提: VLAN/アクセス/トランク/PortFast は ② で設定済み
+! ============================================================
+!
+! ------------------------------------------------------------
+! ■ 不明点・確認事項（実機設定時に確認）
+!  - DHCP Snooping trust は DSW向けアップリンク FE0/7-8。
+!  - `no ip dhcp snooping information option` を付与（理由はASW1.txt参照）。
+!  - Port Security: maximum 1 / sticky / violation restrict（設問10準拠）。
+!  - 対象ポート FE0/1-6 は②で switchport mode access 済み。
+! ------------------------------------------------------------
+
+hostname ASW2
+!
+! ============================================================
+! DHCP Snooping（不正DHCPサーバ対策 / 設問09）
+!   有効VLAN: 10,20,30,40,50,60,99 ／ trust: DSW向け FE0/7-8
+! ============================================================
+no ip dhcp snooping information option
+ip dhcp snooping
+ip dhcp snooping vlan 10,20,30,40,50,60,99
+!
+interface range FastEthernet0/7 - 8
+ ip dhcp snooping trust
+!
+! ============================================================
+! Port Security + BPDU Filter（クライアントポート FE0/1-6）
+! ============================================================
+interface range FastEthernet0/1 - 6
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+ spanning-tree bpdufilter enable
+!
+end

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Steering"
+  short_description: "ネットワーク実習の作業計画・進捗・中断・振り返りを記録"
+  default_prompt: "Use $steering to plan, track, and document this network practice task."

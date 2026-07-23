@@ -1,0 +1,36 @@
+! ============================================================
+! ⑦ EGPルーティング : DSW1 （ディストリビューションL3SW / iBGPフルメッシュ参加）
+! 出典: 設計書_md/08_拠点間接続設計.md / 設問 19_iBGPフルメッシュ
+! 内容: iBGPフルメッシュ（拠点内, Loopback, 認証なし）
+! 前提: ループバックは③、OSPF(ループバック到達性)は④で設定済み
+! ============================================================
+!
+! ------------------------------------------------------------
+! ■ 不明点・確認事項（実機設定時に確認）
+!  - DSWがiBGPに参加する目的: クライアント発の拠点間トラフィック(10.2/10.3宛)を
+!    正しくR1/R2方向へ転送するため、拠点間経路をiBGPで学習する（設問19）。
+!  - 自分以外の全5ノード(DSW2,CSW1,CSW2,R1,R2)とピア。認証なし、update-source Lo0。
+!  - eBGP学習経路のnext-hopはR1/R2側でnext-hop-self済み。
+!  - 経路調整(Local Preference/設問21)はR1/R2のin route-mapで付与され、iBGPで
+!    DSWまで伝播する。DSW側の追加設定は不要。
+! ------------------------------------------------------------
+
+hostname DSW1
+!
+! ============================================================
+! BGP（AS65001 / iBGPフルメッシュ）
+!   自機 Lo0=10.1.254.1。ピア: DSW2(.2) CSW1(.3) CSW2(.4) R1(.5) R2(.6)
+! ============================================================
+router bgp 65001
+ neighbor 10.1.254.2 remote-as 65001
+ neighbor 10.1.254.2 update-source Loopback0
+ neighbor 10.1.254.3 remote-as 65001
+ neighbor 10.1.254.3 update-source Loopback0
+ neighbor 10.1.254.4 remote-as 65001
+ neighbor 10.1.254.4 update-source Loopback0
+ neighbor 10.1.254.5 remote-as 65001
+ neighbor 10.1.254.5 update-source Loopback0
+ neighbor 10.1.254.6 remote-as 65001
+ neighbor 10.1.254.6 update-source Loopback0
+!
+end
