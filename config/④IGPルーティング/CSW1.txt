@@ -42,6 +42,8 @@ interface FastEthernet0/6
 ! ============================================================
 ! OSPFプロセス（router-id 3.3.3.3 / 論理設計⑧）
 ! ============================================================
+ip routing
+
 router ospf 1
  router-id 3.3.3.3
  area 0 authentication message-digest
