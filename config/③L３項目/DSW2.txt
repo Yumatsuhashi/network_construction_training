@@ -49,10 +49,10 @@ interface Loopback0
 !
 ! ============================================================
 ! DSW-CSW間 L3 EtherChannel（/30 / 論理設計⑥ / 設問08）
-!   Po1: DSW2-CSW2  Gi0/1-2  10.1.255.4/30  DSW2=.6
-!   Po2: DSW2-CSW1  Gi0/3-4  10.1.255.12/30 DSW2=.14
+!   Po1: DSW2-CSW2  Fa1/0/1-2  10.1.255.4/30  DSW2=.6
+!   Po2: DSW2-CSW1  Fa1/0/3-4  10.1.255.12/30 DSW2=.14
 ! ============================================================
-interface range GigabitEthernet0/1 - 2
+interface range FastEthernet1/0/1 - 2
  no switchport
  channel-protocol lacp
  channel-group 1 mode active
@@ -63,7 +63,7 @@ interface Port-channel1
  ip address 10.1.255.6 255.255.255.252
  description To CSW2 L3 EtherChannel
 !
-interface range GigabitEthernet0/3 - 4
+interface range FastEthernet1/0/3 - 4
  no switchport
  channel-protocol lacp
  channel-group 2 mode active

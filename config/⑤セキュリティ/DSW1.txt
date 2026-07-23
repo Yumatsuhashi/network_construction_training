@@ -10,7 +10,7 @@
 ! ■ 不明点・確認事項（実機設定時に確認）
 !  - DSWもDHCPサーバ（③のプール）を持つため DHCP Snooping を有効化（設問09）。
 !    trust は対向DSW向け Po3（相互のDHCPサーバ応答を信頼するため）。
-!    ASW向けトランク Gi0/5/Gi0/6 はuntrust（クライアント側）。
+!    ASW向けトランク Fa1/0/5/Fa1/0/6 はuntrust（クライアント側）。
 !    Po1/Po2はL3ルーテッド(no switchport)でSnooping対象VLANに属さない。
 !  - `no ip dhcp snooping information option` を付与（理由はASW側と同じ）。
 !  - Telnet ACL適用範囲【設問12からの意図的な変更】:

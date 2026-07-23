@@ -142,6 +142,7 @@ config/
 
 ## 補足・注意点・要検討事項
 
+- **実機インターフェース名への読み替え（2026-07-23確定）**：設計書のポート番号は維持し、ASW1/ASW2/SVSW の `FE0/x` は実機 `GigabitEthernet1/0/x`、DSW1/DSW2 の `Gi0/x` は実機 `FastEthernet1/0/x` とする。CSW1/CSW2 は `FastEthernet0/x`、R1/R2 は `GigabitEthernet0/x` の現行表記を維持する。この読み替えを②だけでなく③以降のカテゴリ別config・確認コマンドにも適用する。
 - **EtherChannel(設問08)のL2/L3切り分け**：可用性設計は「DSW間・DSW-CSW間」をEtherChannel対象とするが、論理設計⑥ではDSW-CSW間が個別の /30 L3リンクになっている。② では DSW間のL2 EtherChannel を、DSW-CSW間のポートチャネル（L3化する場合）は ③ 側で扱う方針とし、②着手時に設問08の回答を読んで最終確定する。
 - パスワードは演習指定の cisco123 を使用（OSPF/BGP認証・enable/VTY）。演習用のため平文管理でよいが、実機では要注意。
 - 監視サーバ(10.1.100.1)はNTP/Syslog/SNMPの宛先であり設定対象外。

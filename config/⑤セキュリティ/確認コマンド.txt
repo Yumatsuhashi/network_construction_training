@@ -17,16 +17,16 @@
 ------------------------------------------------------------------
 show ip dhcp snooping              ! 有効VLAN・option82設定・trust一覧
 show ip dhcp snooping binding      ! クライアントのDHCPバインディング学習状況
-show interfaces fa0/7 switchport   ! （参考）アップリンク状態
+show interfaces gi1/0/7 switchport ! （参考）アップリンク状態
 show port-security                 ! 各ポートのSecure状態サマリ
-show port-security interface fa0/1 ! maximum 1 / sticky / violation restrict
+show port-security interface gi1/0/1 ! maximum 1 / sticky / violation restrict
 show port-security address         ! sticky学習されたMAC
-show running-config interface fa0/1 ! bpdufilter/port-security/portfast の併記確認
-show spanning-tree interface fa0/1 detail | include bpdu  ! BPDU送受信の停止
+show running-config interface gi1/0/1 ! bpdufilter/port-security/portfast の併記確認
+show spanning-tree interface gi1/0/1 detail | include bpdu  ! BPDU送受信の停止
 
   ▼ 期待値
    - show ip dhcp snooping: Enabled、vlan 10,20,30,40,50,60,99、
-     Insertion of option 82: disabled、trust=Fa0/7,Fa0/8
+     Insertion of option 82: disabled、trust=Gi1/0/7,Gi1/0/8
    - show port-security interface: PortSecurity Enabled, MaxSecureAddr 1,
      Sticky MAC, Violation Mode Restrict
    - bpdufilter enable でBPDU送出が停止（sent/received が増えない）
@@ -53,6 +53,6 @@ show ip interface Vlan60 | include access list  ! VLAN60には無いこと
 ! クライアントPCから Telnet を試行（VLAN10等）→ 接続不可、他(ping/HTTP)は可
 ! システム部(VLAN60)クライアントから Telnet → 接続可
 ! クライアントポートに2台目のMAC → port-security violation(restrict)でカウント
-show port-security interface fa0/1 | include Violation
+show port-security interface gi1/0/1 | include Violation
 ! 不正DHCPサーバをクライアントポートに接続 → OFFERが破棄される（配布されない）
 show ip dhcp snooping statistics

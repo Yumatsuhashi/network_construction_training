@@ -8,36 +8,36 @@
 !
 ! ------------------------------------------------------------
 ! ■ 不明点・確認事項（実機設定時に確認）
-!  - DHCP Snooping trust は DSW向けアップリンク FE0/7-8。設問09の例はGi1/0/5-6
-!    表記だが、本設計のASWアップリンクは FE0/7(→DSW1)/FE0/8(→DSW2)。
+!  - DHCP Snooping trust は DSW向けアップリンク Gi1/0/7-8。設問09の例はGi1/0/5-6
+!    表記だが、本設計のASWアップリンクは Gi1/0/7(→DSW1)/Gi1/0/8(→DSW2)。
 !  - `no ip dhcp snooping information option`（option82挿入を無効化）を付与。
 !    理由: ASWでSnooping有効かつDSWがDHCPサーバの構成では、ASWが挿入した
 !    option82付きパケットをDSW(サーバ)がuntrust扱いで破棄し正規配布が失敗し得るため。
 !    実機で option82 を使う運用なら要見直し。
 !  - Port Security: maximum 1 / sticky / violation restrict（設問10準拠）。
 !    violationをshutdown(err-disable)にするかは運用方針で選択可。
-!  - 対象ポート FE0/1-6 は②で switchport mode access 済み（port-securityの前提）。
+!  - 対象ポート Gi1/0/1-6 は②で switchport mode access 済み（port-securityの前提）。
 ! ------------------------------------------------------------
 
 hostname ASW1
 !
 ! ============================================================
 ! DHCP Snooping（不正DHCPサーバ対策 / 設問09）
-!   有効VLAN: 10,20,30,40,50,60,99 ／ trust: DSW向け FE0/7-8
+!   有効VLAN: 10,20,30,40,50,60,99 ／ trust: DSW向け Gi1/0/7-8
 ! ============================================================
 no ip dhcp snooping information option
 ip dhcp snooping
 ip dhcp snooping vlan 10,20,30,40,50,60,99
 !
-interface range FastEthernet0/7 - 8
+interface range GigabitEthernet1/0/7 - 8
  ip dhcp snooping trust
 !
 ! ============================================================
-! Port Security + BPDU Filter（クライアントポート FE0/1-6）
+! Port Security + BPDU Filter（クライアントポート Gi1/0/1-6）
 !   Port Security: 不正ホスト接続対策（設問10）
 !   BPDU Filter  : クライアント側へBPDUを送出しない（設問11）
 ! ============================================================
-interface range FastEthernet0/1 - 6
+interface range GigabitEthernet1/0/1 - 6
  switchport port-security
  switchport port-security maximum 1
  switchport port-security mac-address sticky

@@ -73,6 +73,12 @@
   - CSW/R は現行configの表記を維持する前提。②L2ではCSW/R対象なし。
 - [x] ASW1/ASW2 の実機で `switchport trunk encapsulation dot1q` が非対応だったため、ASW側トランクから当該行を削除（802.1Q固定機種のため `switchport mode trunk` で足りる）。
 
+### ③以降の実機IF名反映（2026-07-23）
+- [x] ③L3のDSW1/DSW2で、CSW向けEtherChannelメンバーを `FastEthernet1/0/1-4` へ修正する。
+- [x] ④IGP・⑥管理・⑦EGPを監査し、DSW/ASW/SVSWの旧物理IF名が残っていないことを確認する（物理IFを直接指定する箇所はCSW/Rのみで、いずれも提示規則どおり）。
+- [x] ⑤セキュリティのASW1/ASW2と確認コマンドを `GigabitEthernet1/0/x` へ修正し、DSW注記も実機名へ合わせる。
+- [x] ③〜⑦を横断検索し、旧実行IF名・誤った接続注記が残っていないことを確認する（`config/_統合/` は未生成で対象ファイルなし）。
+
 ## フェーズ2: ③L３項目
 
 - [x] 根拠読み込み（設問06,07 / 設計書03論理設計③〜⑦・04耐障害性）
