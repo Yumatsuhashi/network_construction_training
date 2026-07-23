@@ -112,8 +112,8 @@ interface Vlan40
  standby 40 priority 110
  standby 40 preempt
  standby 40 timers msec 200 msec 750
- standby 40 track Port-channel1 decrement 6
- standby 40 track Port-channel2 decrement 6
+ standby 40 track Port-channel1 6
+ standby 40 track Port-channel2 6
 !
 interface Vlan50
  ip address 10.1.50.254 255.255.255.0
@@ -122,8 +122,8 @@ interface Vlan50
  standby 50 priority 110
  standby 50 preempt
  standby 50 timers msec 200 msec 750
- standby 50 track Port-channel1 decrement 6
- standby 50 track Port-channel2 decrement 6
+ standby 50 track Port-channel1 6
+ standby 50 track Port-channel2 6
 !
 interface Vlan60
  ip address 10.1.60.254 255.255.255.0
@@ -132,8 +132,8 @@ interface Vlan60
  standby 60 priority 110
  standby 60 preempt
  standby 60 timers msec 200 msec 750
- standby 60 track Port-channel1 decrement 6
- standby 60 track Port-channel2 decrement 6
+ standby 60 track Port-channel1 6
+ standby 60 track Port-channel2 6
 !
 ! ============================================================
 ! 管理VLAN99 SVI + HSRP（論理設計⑤ / DSW2 Standby）

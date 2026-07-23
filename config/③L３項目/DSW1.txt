@@ -92,8 +92,8 @@ interface Vlan10
  standby 10 priority 110
  standby 10 preempt
  standby 10 timers msec 200 msec 750
- standby 10 track Port-channel1 decrement 6
- standby 10 track Port-channel2 decrement 6
+ standby 10 track Port-channel1 6
+ standby 10 track Port-channel2 6
 !
 interface Vlan20
  ip address 10.1.20.253 255.255.255.0
@@ -102,8 +102,8 @@ interface Vlan20
  standby 20 priority 110
  standby 20 preempt
  standby 20 timers msec 200 msec 750
- standby 20 track Port-channel1 decrement 6
- standby 20 track Port-channel2 decrement 6
+ standby 20 track Port-channel1 6
+ standby 20 track Port-channel2 6
 !
 interface Vlan30
  ip address 10.1.30.253 255.255.255.0
@@ -112,8 +112,8 @@ interface Vlan30
  standby 30 priority 110
  standby 30 preempt
  standby 30 timers msec 200 msec 750
- standby 30 track Port-channel1 decrement 6
- standby 30 track Port-channel2 decrement 6
+ standby 30 track Port-channel1 6
+ standby 30 track Port-channel2 6
 !
 interface Vlan40
  ip address 10.1.40.253 255.255.255.0
@@ -150,7 +150,7 @@ interface Vlan99
  standby 99 priority 110
  standby 99 preempt
  standby 99 timers msec 200 msec 750
- standby 99 track Port-channel1 decrement 6
- standby 99 track Port-channel2 decrement 6
+ standby 99 track Port-channel1 6
+ standby 99 track Port-channel2 6
 !
 end

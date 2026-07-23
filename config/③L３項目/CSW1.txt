@@ -104,7 +104,7 @@ interface Vlan100
  standby 100 priority 110
  standby 100 preempt
  standby 100 timers msec 200 msec 750
- standby 100 track FastEthernet0/6 decrement 20
+ standby 100 track FastEthernet0/6 20
 !
 ! ============================================================
 ! 未使用ポート
