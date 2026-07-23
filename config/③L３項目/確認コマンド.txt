@@ -87,3 +87,17 @@ DSW1(config)# interface Port-channel2
 DSW1(config-if)# shutdown            ! 2本喪失 → 110-12=98（DSW2へ切替を確認）
 ! 確認後は no shutdown で復旧（preemptでDSW1がActiveへ復帰）
 show standby brief                    ! 切替の前後で Active がどちらかを確認
+
+
+
+CSW2#
+CSW2#sh standby br
+                     P indicates configured to preempt.
+                     |
+Interface   Grp  Pri P State   Active          Standby         Virtual IP
+Vl100       100  100 P Standby 10.1.100.253    local           10.1.100.200
+
+
+
+
+
