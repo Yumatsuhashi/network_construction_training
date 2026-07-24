@@ -47,6 +47,6 @@ vlan access-map BLOCK_TELNET 10
 vlan access-map BLOCK_TELNET 20
  action forward
 !
-vlan filter BLOCK_TELNET vlan-list 10,20,30,40,50,60
+vlan filter BLOCK_TELNET vlan-list 10,20,30,40,50
 !
 end
