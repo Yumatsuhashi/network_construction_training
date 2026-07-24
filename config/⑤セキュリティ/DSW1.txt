@@ -1,60 +1,51 @@
 ! ============================================================
 ! ⑤ セキュリティ : DSW1 （ディストリビューションL3SW）
 ! 出典: 設計書_md/06_セキュリティ.md
-!       設問 09_DHCPスヌーピング / 12_TelnetアクセスリストACL
-! 内容: DHCP Snooping（DSWもDHCPサーバ）/ Telnet制御ACL
+!       設問 12_TelnetアクセスリストACL
+! 内容: Telnet制御（VACLで実装）
 ! 前提: VLAN/SVI/HSRP/DHCPプール は ②③ で設定済み
 ! ============================================================
 !
 ! ------------------------------------------------------------
 ! ■ 不明点・確認事項（実機設定時に確認）
-!  - DSWもDHCPサーバ（③のプール）を持つため DHCP Snooping を有効化（設問09）。
-!    trust は対向DSW向け Po3（相互のDHCPサーバ応答を信頼するため）。
-!    ASW向けトランク Fa1/0/5/Fa1/0/6 はuntrust（クライアント側）。
-!    Po1/Po2はL3ルーテッド(no switchport)でSnooping対象VLANに属さない。
-!  - `no ip dhcp snooping information option` を付与（理由はASW側と同じ）。
-!  - Telnet ACL適用範囲【設問12からの意図的な変更】:
-!    設問12はDSW1にVLAN10/20/30, DSW2にVLAN40/50を適用としているが、本設計は
-!    HSRPで両DSWが全クライアントVLANのSVIを持つため、フェイルオーバー後も遮断が
-!    効くよう DSW1/DSW2 双方の Vlan10,20,30,40,50 に in で適用する。
-!    VLAN60(システム部)は全許可のため適用しない。VLAN99(管理)も対象外。
+!  - 【VACL採用理由】SVIに ip access-group in するRACLはルーティング済み
+!    トラフィックのみ対象。VACL(vlan filter)はL2スイッチング分を含むVLAN内
+!    全トラフィックに効くため、ASW跨ぎで DSW をL2通過する同一VLAN Telnet も
+!    遮断できる。※同一ASW配下のPC間はDSW非経由のため対象外（要件「DSWで制御」の範囲）。
+!  - 【送信元の限定】permit tcp any … は広すぎるため、送信元を各クライアント
+!    セグメントの /24（10.1.X0.0/24）に限定。DHCPプールは .101-.199 だが採番は
+!    /24単位のためサブネット指定とした。
+!  - 【VACLのmatch意味論】match ip address は ACLで permit されたパケットが「マッチ」。
+!    → TELNET(permit)にマッチしたものを seq10 で action drop、
+!       残りは seq20 の action forward（末尾の暗黙dropを避けるため明示）。
+!  - VLAN60(システム部)は全許可。vlan-list には含めるが、TELNET ACLに 10.1.60.0/24 を
+!    入れないため、VLAN60の通信は全て seq20(action forward)＝全許可になる。
+!    「誰を遮断するか」はACL側に一元化。VLAN99(管理)はVACL対象外（vlan-listに含めない）。
+!  - 【DHCP Snooping削除】不正DHCPサーバ対策はアクセス層(ASW)で実施済み。DSWは
+!    クライアント接続ポートを持たずDHCPサーバ側のため、Snoopingは不要と判断
+!    （設問09解答からの意図的変更）。DAI/IP Source Guard 導入時は再検討。
 ! ------------------------------------------------------------
 
 hostname DSW1
 !
 ! ============================================================
-! DHCP Snooping（不正DHCPサーバ対策 / 設問09）
-!   有効VLAN: 10,20,30,40,50,60,99 ／ trust: 対向DSW向け Po3
+! Telnet制御 VACL（クライアント→任意宛のTelnet禁止/他許可 / 設問12）
+!   対象VLAN: 10,20,30,40,50,60（全クライアントVLAN）／ 除外: VLAN99(管理)
+!   送信元: 各クライアントセグメント /24 に限定（VLAN60は非遮断のためACLに含めない）
 ! ============================================================
-no ip dhcp snooping information option
-ip dhcp snooping
-ip dhcp snooping vlan 10,20,30,40,50,60,99
+ip access-list extended TELNET
+ permit tcp 10.1.10.0 0.0.0.255 any eq 23
+ permit tcp 10.1.20.0 0.0.0.255 any eq 23
+ permit tcp 10.1.30.0 0.0.0.255 any eq 23
+ permit tcp 10.1.40.0 0.0.0.255 any eq 23
+ permit tcp 10.1.50.0 0.0.0.255 any eq 23
 !
-interface Port-channel3
- ip dhcp snooping trust
+vlan access-map BLOCK_TELNET 10
+ match ip address TELNET
+ action drop
+vlan access-map BLOCK_TELNET 20
+ action forward
 !
-! ============================================================
-! Telnet制御ACL（クライアント→任意宛のTelnet禁止/他許可 / 設問12）
-! ============================================================
-ip access-list extended BLOCK_TELNET
- deny tcp any any eq 23
- permit ip any any
-!
-interface Vlan10
- ip access-group BLOCK_TELNET in
-!
-interface Vlan20
- ip access-group BLOCK_TELNET in
-!
-interface Vlan30
- ip access-group BLOCK_TELNET in
-!
-interface Vlan40
- ip access-group BLOCK_TELNET in
-!
-interface Vlan50
- ip access-group BLOCK_TELNET in
-!
-! Vlan60(システム部)は全アクセス許可のため ACL 適用しない
+vlan filter BLOCK_TELNET vlan-list 10,20,30,40,50,60
 !
 end
